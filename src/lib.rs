@@ -1,4 +1,5 @@
 pub mod app;
+pub mod assets;
 pub mod calculator;
 pub mod cli;
 pub mod compositor;

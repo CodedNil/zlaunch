@@ -111,14 +111,14 @@ impl ListItem {
 
     /// Get the sort priority for this item type.
     /// Lower values appear first in the list.
-    /// Calculator (0) < Windows (1) < Commands (2) < Applications (3) < Actions (4)
+    /// Calculator (0) < Windows (1) < Commands/Actions (2) < Applications (3)
     pub fn sort_priority(&self) -> u8 {
         match self {
             Self::Calculator(_) => 0,
             Self::Window(_) => 1,
             Self::Submenu(_) => 2,
+            Self::Action(_) => 2, // Actions are grouped with Commands
             Self::Application(_) => 3,
-            Self::Action(_) => 4,
         }
     }
 
@@ -128,8 +128,8 @@ impl ListItem {
             Self::Calculator(_) => "Calculator",
             Self::Window(_) => "Windows",
             Self::Submenu(_) => "Commands",
+            Self::Action(_) => "Commands", // Actions are grouped with Commands
             Self::Application(_) => "Applications",
-            Self::Action(_) => "Actions",
         }
     }
 }

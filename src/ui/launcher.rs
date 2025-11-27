@@ -108,6 +108,12 @@ impl LauncherView {
                         tracing::warn!(%e, "Failed to copy to clipboard");
                     }
                 }
+                ListItem::Action(act) => {
+                    // Execute the action (shutdown, reboot, etc.)
+                    if let Err(e) = act.execute() {
+                        tracing::warn!(%e, "Failed to execute action");
+                    }
+                }
                 _ => {}
             }
             on_hide_for_confirm();

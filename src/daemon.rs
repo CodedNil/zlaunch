@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tracing::{debug, error, info};
 
 use crate::app::{DaemonEvent, WindowEvent, create_daemon_channel, window};
+use crate::assets::CombinedAssets;
 use crate::compositor::{Compositor, detect_compositor};
 use crate::desktop::cache::load_applications;
 use crate::desktop::capture_session_environment;
@@ -71,7 +72,7 @@ pub fn run() -> Result<()> {
     });
 
     Application::new()
-        .with_assets(gpui_component_assets::Assets)
+        .with_assets(CombinedAssets)
         .with_quit_mode(QuitMode::Explicit)
         .run(move |cx| {
             gpui_component::init(cx);

@@ -7,6 +7,7 @@ edition = "2024"
 gpui = { git = "https://github.com/zed-industries/zed", rev = "7c724c0f1049e610c541c2f4f6a8739f91865e02" }
 gpui-component = "0.4.1"
 gpui-component-assets = "0.4.1"
+rust-embed = "8"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 freedesktop-desktop-entry = "0.7"

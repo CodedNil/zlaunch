@@ -8,8 +8,10 @@ pub use base::{item_container, render_action_indicator, render_icon, render_text
 pub use calculator::render_calculator;
 pub use delegate::ItemListDelegate;
 
+use crate::assets::PhosphorIcon;
 use crate::items::ListItem;
-use gpui::{Div, Stateful, prelude::*};
+use crate::ui::theme::theme;
+use gpui::{Div, SharedString, Stateful, div, prelude::*, svg};
 
 /// Render any list item based on its type.
 /// This is the main dispatch function for item rendering.
@@ -42,9 +44,8 @@ fn render_window(win: &crate::items::WindowItem, selected: bool, row: usize) -> 
 }
 
 fn render_action(act: &crate::items::ActionItem, selected: bool, row: usize) -> Stateful<Div> {
-    // Actions don't have file-based icons yet, use placeholder
     let mut item = item_container(row, selected)
-        .child(render_icon(None))
+        .child(render_phosphor_icon(act.icon_name.as_deref()))
         .child(render_text_content(
             &act.name,
             act.description.as_deref(),
@@ -60,7 +61,7 @@ fn render_action(act: &crate::items::ActionItem, selected: bool, row: usize) -> 
 
 fn render_submenu(sub: &crate::items::SubmenuItem, selected: bool, row: usize) -> Stateful<Div> {
     let mut item = item_container(row, selected)
-        .child(render_submenu_icon(sub.icon_name.as_deref()))
+        .child(render_phosphor_icon(sub.icon_name.as_deref()))
         .child(render_text_content(
             &sub.name,
             sub.description.as_deref(),
@@ -69,19 +70,16 @@ fn render_submenu(sub: &crate::items::SubmenuItem, selected: bool, row: usize) -
 
     if selected {
         // Show arrow instead of "Open" to indicate submenu
-        item = item.child(render_action_indicator("→"));
+        item = item.child(render_action_indicator("->"));
     }
 
     item
 }
 
-/// Render a submenu icon, using emoji or fallback placeholder.
-fn render_submenu_icon(icon_name: Option<&str>) -> Div {
-    use crate::ui::theme::theme;
-    use gpui::{SharedString, div, prelude::*};
-
-    let theme = theme();
-    let size = theme.icon_size;
+/// Render a Phosphor icon from embedded SVG assets.
+fn render_phosphor_icon(icon_name: Option<&str>) -> Div {
+    let t = theme();
+    let size = t.icon_size;
 
     let icon_container = div()
         .w(size)
@@ -90,16 +88,24 @@ fn render_submenu_icon(icon_name: Option<&str>) -> Div {
         .flex()
         .items_center()
         .justify_center()
-        .bg(theme.icon_placeholder_background)
+        .bg(t.icon_placeholder_background)
         .rounded_sm();
 
-    // Use emoji based on icon name
-    let emoji = match icon_name {
-        Some("smile") => "😀",
-        Some("settings") => "⚙️",
-        Some("power") => "⏻",
-        _ => "?",
-    };
-
-    icon_container.child(div().text_sm().child(SharedString::from(emoji)))
+    // Try to get the Phosphor icon
+    if let Some(icon) = icon_name.and_then(PhosphorIcon::from_name) {
+        icon_container.child(
+            svg()
+                .path(icon.path())
+                .size_4()
+                .text_color(t.icon_placeholder_color),
+        )
+    } else {
+        // Fallback to placeholder
+        icon_container.child(
+            div()
+                .text_sm()
+                .text_color(t.icon_placeholder_color)
+                .child(SharedString::from("?")),
+        )
+    }
 }

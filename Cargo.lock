@@ -8084,6 +8084,7 @@ dependencies = [
  "gpui-component-assets",
  "lazy_static",
  "regex",
+ "rust-embed",
  "serde",
  "serde_json",
  "tracing",

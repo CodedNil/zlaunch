@@ -1,5 +1,6 @@
+use std::process::Command;
+
 /// The kind of action to perform.
-/// This is a placeholder for future implementation.
 #[derive(Clone, Debug)]
 pub enum ActionKind {
     /// Shutdown the system
@@ -17,7 +18,6 @@ pub enum ActionKind {
 }
 
 /// An action item representing a functional command (shutdown, reboot, etc.).
-/// This is a placeholder for future implementation.
 #[derive(Clone, Debug)]
 pub struct ActionItem {
     pub id: String,
@@ -42,5 +42,77 @@ impl ActionItem {
             icon_name,
             kind,
         }
+    }
+
+    /// Create a built-in action item for the given kind.
+    /// Icon names correspond to Phosphor bold icons in assets/icons/.
+    pub fn builtin(kind: ActionKind) -> Self {
+        let (id, name, description, icon_name) = match &kind {
+            ActionKind::Shutdown => (
+                "action-shutdown",
+                "Shutdown",
+                "Power off the system",
+                "power",
+            ),
+            ActionKind::Reboot => ("action-reboot", "Reboot", "Restart the system", "reboot"),
+            ActionKind::Suspend => ("action-suspend", "Suspend", "Suspend to RAM", "moon"),
+            ActionKind::Lock => ("action-lock", "Lock Screen", "Lock the session", "lock"),
+            ActionKind::Logout => ("action-logout", "Log Out", "End the session", "sign-out"),
+            ActionKind::Command(cmd) => {
+                return Self {
+                    id: format!("action-cmd-{}", cmd.len()),
+                    name: "Custom Command".to_string(),
+                    description: Some(cmd.clone()),
+                    icon_name: Some("terminal".to_string()),
+                    kind,
+                };
+            }
+        };
+
+        Self {
+            id: id.to_string(),
+            name: name.to_string(),
+            description: Some(description.to_string()),
+            icon_name: Some(icon_name.to_string()),
+            kind,
+        }
+    }
+
+    /// Get all built-in action items.
+    pub fn builtins() -> Vec<Self> {
+        vec![
+            Self::builtin(ActionKind::Shutdown),
+            Self::builtin(ActionKind::Reboot),
+            Self::builtin(ActionKind::Suspend),
+            Self::builtin(ActionKind::Lock),
+            Self::builtin(ActionKind::Logout),
+        ]
+    }
+
+    /// Execute the action.
+    pub fn execute(&self) -> anyhow::Result<()> {
+        match &self.kind {
+            ActionKind::Shutdown => {
+                Command::new("systemctl").arg("poweroff").spawn()?;
+            }
+            ActionKind::Reboot => {
+                Command::new("systemctl").arg("reboot").spawn()?;
+            }
+            ActionKind::Suspend => {
+                Command::new("systemctl").arg("suspend").spawn()?;
+            }
+            ActionKind::Lock => {
+                Command::new("loginctl").arg("lock-session").spawn()?;
+            }
+            ActionKind::Logout => {
+                Command::new("loginctl")
+                    .args(["terminate-session", "self"])
+                    .spawn()?;
+            }
+            ActionKind::Command(cmd) => {
+                Command::new("sh").args(["-c", cmd]).spawn()?;
+            }
+        }
+        Ok(())
     }
 }

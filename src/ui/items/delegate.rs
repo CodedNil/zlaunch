@@ -1,5 +1,5 @@
 use crate::calculator::{evaluate_expression, looks_like_expression};
-use crate::items::{CalculatorItem, ListItem, SubmenuItem};
+use crate::items::{ActionItem, CalculatorItem, ListItem, SubmenuItem};
 use crate::ui::items::render_item;
 use crate::ui::theme::theme;
 use fuzzy_matcher::FuzzyMatcher;
@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub struct SectionInfo {
     /// Number of windows in filtered results
     pub window_count: usize,
-    /// Number of commands (submenus) in filtered results
+    /// Number of commands (submenus and actions) in filtered results
     pub command_count: usize,
     /// Number of applications in filtered results
     pub app_count: usize,
@@ -48,8 +48,13 @@ impl ItemListDelegate {
         items.push(ListItem::Submenu(
             SubmenuItem::grid("submenu-emojis", "Emojis", 8)
                 .with_description("Search and copy emojis")
-                .with_icon("smile"),
+                .with_icon("smiley"),
         ));
+
+        // Add built-in action items
+        for action in ActionItem::builtins() {
+            items.push(ListItem::Action(action));
+        }
 
         let len = items.len();
         let filtered_indices: Vec<usize> = (0..len).collect();
@@ -75,7 +80,8 @@ impl ItemListDelegate {
             if let Some(item) = items.get(item_idx) {
                 if item.is_window() {
                     info.window_count += 1;
-                } else if item.is_submenu() {
+                } else if item.is_submenu() || item.is_action() {
+                    // Actions are grouped with commands (submenus)
                     info.command_count += 1;
                 } else if item.is_application() {
                     info.app_count += 1;
