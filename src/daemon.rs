@@ -34,6 +34,14 @@ pub fn run() -> Result<()> {
     // This ensures launched applications get proper theming variables.
     capture_session_environment();
 
+    // Initialize clipboard history
+    crate::clipboard::data::init();
+    info!("Initialized clipboard history");
+
+    // Start clipboard monitor
+    let _clipboard_monitor_handle = crate::clipboard::monitor::start_monitor();
+    info!("Started clipboard monitor");
+
     let ipc_server = match IpcServer::new() {
         Ok(server) => server,
         Err(e) => {

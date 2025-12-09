@@ -28,6 +28,10 @@ fasteval = "0.2"
 arboard = { version = "3", features = ["wayland-data-control"] }
 regex = "1"
 emojis = "0.8"
+image = "0.25"
+wayland-client = "0.31"
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+urlencoding = "2"
 
 [patch.crates-io]
 gpui = { git = "https://github.com/zed-industries/zed", rev = "7c724c0f1049e610c541c2f4f6a8739f91865e02" }

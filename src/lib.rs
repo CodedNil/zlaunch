@@ -2,6 +2,7 @@ pub mod app;
 pub mod assets;
 pub mod calculator;
 pub mod cli;
+pub mod clipboard;
 pub mod compositor;
 pub mod daemon;
 pub mod desktop;

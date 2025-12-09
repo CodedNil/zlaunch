@@ -60,6 +60,12 @@ pub enum PhosphorIcon {
     SignOut,
     Smiley,
     Terminal,
+    Clipboard,
+    ClipboardText,
+    File,
+    FileText,
+    FileImage,
+    Image,
 }
 
 impl PhosphorIcon {
@@ -73,6 +79,12 @@ impl PhosphorIcon {
             Self::SignOut => "icons/sign-out.svg",
             Self::Smiley => "icons/smiley.svg",
             Self::Terminal => "icons/terminal.svg",
+            Self::Clipboard => "icons/clipboard-bold.svg",
+            Self::ClipboardText => "icons/clipboard-text-bold.svg",
+            Self::File => "icons/file-bold.svg",
+            Self::FileText => "icons/file-text-bold.svg",
+            Self::FileImage => "icons/file-image-bold.svg",
+            Self::Image => "icons/image-bold.svg",
         }
     }
 
@@ -86,6 +98,12 @@ impl PhosphorIcon {
             "sign-out" => Some(Self::SignOut),
             "smiley" => Some(Self::Smiley),
             "terminal" => Some(Self::Terminal),
+            "clipboard" => Some(Self::Clipboard),
+            "clipboard-text" => Some(Self::ClipboardText),
+            "file" => Some(Self::File),
+            "file-text" => Some(Self::FileText),
+            "file-image" => Some(Self::FileImage),
+            "image" => Some(Self::Image),
             _ => None,
         }
     }

@@ -50,6 +50,11 @@ impl ItemListDelegate {
                 .with_description("Search and copy emojis")
                 .with_icon("smiley"),
         ));
+        items.push(ListItem::Submenu(
+            SubmenuItem::list("submenu-clipboard", "Clipboard History")
+                .with_description("View and paste clipboard history")
+                .with_icon("clipboard"),
+        ));
 
         // Add built-in action items
         for action in ActionItem::builtins() {
