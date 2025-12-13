@@ -8727,6 +8727,7 @@ dependencies = [
  "urlencoding",
  "wayland-client",
  "wayland-protocols-wlr",
+ "zbus",
 ]
 
 [[package]]

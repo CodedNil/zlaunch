@@ -38,8 +38,8 @@ pub enum ListItem {
     Search(SearchItem),
     /// An AI query item
     Ai(AiItem),
-    /// A theme item
-    Theme(ThemeItem),
+    /// A theme item (boxed due to large size)
+    Theme(Box<ThemeItem>),
 }
 
 impl ListItem {
@@ -228,6 +228,6 @@ impl From<AiItem> for ListItem {
 
 impl From<ThemeItem> for ListItem {
     fn from(item: ThemeItem) -> Self {
-        Self::Theme(item)
+        Self::Theme(Box::new(item))
     }
 }

@@ -231,10 +231,10 @@ pub fn update_config(f: impl FnOnce(&mut AppConfig)) {
     f(&mut config);
 
     // Only save if config file already exists
-    if config_file_exists() {
-        if let Err(e) = save_config_to_file(&config) {
-            tracing::warn!("Failed to save config: {}", e);
-        }
+    if config_file_exists()
+        && let Err(e) = save_config_to_file(&config)
+    {
+        tracing::warn!("Failed to save config: {}", e);
     }
 }
 
