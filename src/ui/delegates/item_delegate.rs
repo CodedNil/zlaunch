@@ -586,7 +586,8 @@ impl ListDelegate for ItemListDelegate {
         // Show "Search and AI" header when we have regular items above
         let has_regular_items = self.section_info.window_count > 0
             || self.section_info.command_count > 0
-            || self.section_info.app_count > 0;
+            || self.section_info.app_count > 0
+            || self.calculator_item.is_some();
 
         if section_type == SectionType::SearchAndAi && has_regular_items {
             let theme = theme();
@@ -603,8 +604,8 @@ impl ListDelegate for ItemListDelegate {
             );
         }
 
-        // Calculator and SearchAndAi (without regular items) have no header
-        if section_type == SectionType::Calculator || section_type == SectionType::SearchAndAi {
+        // SearchAndAi (without regular items) has no header
+        if section_type == SectionType::SearchAndAi {
             return None;
         }
 
@@ -624,7 +625,7 @@ impl ListDelegate for ItemListDelegate {
 
         let theme = theme();
         let title = match section_type {
-            SectionType::Calculator => return None,
+            SectionType::Calculator => "Calculator",
             SectionType::SearchAndAi => return None,
             SectionType::Windows => "Windows",
             SectionType::Commands => "Commands",
