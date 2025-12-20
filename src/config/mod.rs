@@ -30,6 +30,8 @@ pub struct AppConfig {
     pub hyprland_auto_blur: bool,
     /// Modules that are disabled
     pub disabled_modules: Option<HashSet<ConfigModule>>,
+    /// Enable transparency of the window
+    pub enable_transparency: bool,
 }
 
 /// Modules enum
@@ -53,6 +55,7 @@ impl AppConfig {
             window_height: 400.0,
             hyprland_auto_blur: true,
             disabled_modules: None,
+            enable_transparency: true,
         }
     }
 }
@@ -65,6 +68,7 @@ impl Default for AppConfig {
             window_height: 400.0,
             hyprland_auto_blur: true,
             disabled_modules: None,
+            enable_transparency: true,
         }
     }
 }
