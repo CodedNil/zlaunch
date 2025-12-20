@@ -23,7 +23,7 @@ pub struct AiModeHandler {
     view: AiResponseView,
     /// Task for polling the streaming channel
     /// (stored to keep it alive, but never read)
-    _stream_task: Task<()>,
+    stream_task: Task<()>,
 }
 
 impl AiModeHandler {
@@ -49,15 +49,34 @@ impl AiModeHandler {
         let view = AiResponseView::new(query.clone());
 
         // Start streaming from the AI module
-        let rx = ai::spawn_stream(query)?;
+        let rx = ai::spawn_stream(view.messages().clone())?;
 
         // Create task to poll the channel
         let stream_task = Self::spawn_polling_task(rx, launcher_entity, cx);
 
-        Some(Self {
-            view,
-            _stream_task: stream_task,
-        })
+        Some(Self { view, stream_task })
+    }
+
+    /// Send a new user message. Cancels the current streaming task.
+    pub fn send_message<T>(
+        &mut self,
+        message: String,
+        launcher_entity: WeakEntity<T>,
+        cx: &mut Context<T>,
+    ) where
+        T: AiModeAccess + 'static,
+    {
+        // Abort the current task by replacing it with a ready task
+        self.stream_task = Task::ready(());
+
+        self.view.finish_streaming();
+        self.view.add_user_message(message);
+
+        // Start streaming from the AI module
+        if let Some(rx) = ai::spawn_stream(self.view.messages().clone()) {
+            // Create task to poll the channel
+            self.stream_task = Self::spawn_polling_task(rx, launcher_entity, cx);
+        }
     }
 
     /// Spawn a task that polls the streaming channel and updates the view.

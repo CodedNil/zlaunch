@@ -317,6 +317,27 @@ impl LauncherView {
         }
     }
 
+    /// Update AI response mode with a new prompt
+    fn update_ai_mode(&mut self, cx: &mut Context<Self>) {
+        // Get the AI query from the selected item
+        let selected_item = self.list_state.read(cx).delegate().get_item_at(
+            self.list_state
+                .read(cx)
+                .delegate()
+                .selected_index()
+                .unwrap_or(0),
+        );
+        let query = if let Some(ListItem::Ai(ai_item)) = selected_item {
+            ai_item.query.clone()
+        } else {
+            return;
+        };
+
+        if let Some(handler) = &mut self.ai_mode_handler {
+            handler.send_message(query, cx.weak_entity(), cx);
+        }
+    }
+
     /// Exit AI response mode and return to main view.
     fn exit_ai_mode(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.view_mode = ViewMode::Main;
@@ -775,7 +796,8 @@ impl LauncherView {
                 self.exit_theme_mode(window, cx);
             }
             ViewMode::AiResponse => {
-                // No confirmation in AI response mode
+                // If already in AI mode, then send a new prompt
+                self.update_ai_mode(cx);
             }
         }
     }
