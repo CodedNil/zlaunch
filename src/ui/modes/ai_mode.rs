@@ -141,18 +141,27 @@ impl AiModeHandler {
         &self.view
     }
 
-    /// Update the input field when entering AI mode.
-    pub fn update_input(
-        query: &str,
+    /// Update input placeholder when entering AI mode.
+    pub fn setup_input(
         input_state: &mut InputState,
         window: &mut Window,
         cx: &mut Context<InputState>,
     ) {
-        input_state.set_value(query.to_string(), window, cx);
+        input_state.set_value("", window, cx);
+        input_state.set_placeholder("Send a new prompt or stop response...", window, cx);
     }
 
-    /// Clear the input field when exiting AI mode.
+    /// Clear the input value when sending a new prompt.
     pub fn clear_input(
+        input_state: &mut InputState,
+        window: &mut Window,
+        cx: &mut Context<InputState>,
+    ) {
+        input_state.set_value("", window, cx);
+    }
+
+    /// Restore input placeholder when exiting AI mode.
+    pub fn restore_input(
         input_state: &mut InputState,
         window: &mut Window,
         cx: &mut Context<InputState>,
