@@ -126,7 +126,7 @@ url = "https://search.brave.com/search?q={query}"
 name = "YouTube"
 trigger = "!yt"
 url = "https://youtube.com/search?q={query}"
-icon = "YoutubeLogo"
+icon = "youtube-logo"
 ```
 
 ### Configuration options
