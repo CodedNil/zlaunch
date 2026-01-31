@@ -177,8 +177,7 @@ By default, zlaunch will not persist changes in the UI (theme) or auto-create th
 
 ```toml
 theme = "one-dark"
-window_width = 800.0
-window_height = 500.0
+launcher_size = [800.0, 500.0]
 hyprland_auto_blur = false
 enable_transparency = false
 
@@ -203,10 +202,12 @@ icon = "youtube-logo"
 ### Configuration options
 
 - `theme` — Theme name (`default`, a bundled theme, or a custom theme file)
-- `window_width` / `window_height` — Launcher window size
-- `enable_transparency` — Defaults to `true`. Set to `false` to force an opaque background
-- `hyprland_auto_blur` — Defaults to `true`. Attempts to apply Hyprland blur rules (WIP)
-- `default_modes` — List of modes to cycle through with Ctrl+Tab. Defaults to `["combined"]`
+- `launcher_size` — Launcher panel size as `[width, height]`. Default: `[600.0, 400.0]`
+- `enable_backdrop` — Show transparent backdrop with click-outside-to-close. Default: `true`. When `false`, the window is just the launcher panel
+- `window_size` — Explicit window buffer size as `[width, height]`. Only used when `enable_backdrop = true`. Reduces VRAM usage compared to compositor defaults (8K on most compositors, 1920x1080 on KDE)
+- `enable_transparency` — Enable transparent background. Default: `true`
+- `hyprland_auto_blur` — Attempt to apply Hyprland blur rules. Default: `true`
+- `default_modes` — List of modes to cycle through with Ctrl+Tab. Default: `["combined"]`
 - `combined_modules` — Ordered list of modules to include in combined view. Omit to show all modules
 - `search_providers` — Custom web search providers
 

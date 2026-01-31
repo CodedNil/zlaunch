@@ -155,14 +155,9 @@ fn save_config_to_file(config: &AppConfig) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Get the configured window width.
-pub fn window_width() -> f32 {
-    config().window_width
-}
-
-/// Get the configured window height.
-pub fn window_height() -> f32 {
-    config().window_height
+/// Get the configured launcher panel size (width, height).
+pub fn launcher_size() -> (f32, f32) {
+    config().get_launcher_size()
 }
 
 /// Load the configured theme, falling back to default if anything fails.

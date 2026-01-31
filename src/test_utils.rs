@@ -134,8 +134,7 @@ mod tests {
     #[test]
     fn test_mock_config() {
         let config = mock_config();
-        assert_eq!(config.window_width, 600.0);
-        assert_eq!(config.window_height, 400.0);
+        assert_eq!(config.get_launcher_size(), (600.0, 400.0));
     }
 
     #[test]

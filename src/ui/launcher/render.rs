@@ -12,6 +12,7 @@ impl gpui::Render for LauncherView {
         // Clone theme to avoid borrow conflicts
         let theme = self.current_theme.clone();
         let config = crate::config::config();
+        let (launcher_w, launcher_h) = config.get_launcher_size();
 
         // Input prefix (icon based on mode and navigation state)
         let input_prefix = self.render_input_prefix(cx);
@@ -19,67 +20,87 @@ impl gpui::Render for LauncherView {
         // List content based on mode
         let list_content = self.render_list_content(window, cx);
 
-        // Outer container - fullscreen with centered content
-        let on_hide = self.on_hide.clone();
-        div()
-            .track_focus(&self.focus_handle)
-            .key_context("LauncherView")
-            .on_action(cx.listener(Self::select_next))
-            .on_action(cx.listener(Self::select_prev))
-            .on_action(cx.listener(Self::select_tab))
-            .on_action(cx.listener(Self::select_tab_prev))
-            .on_action(cx.listener(Self::confirm))
-            .on_action(cx.listener(Self::cancel))
-            .on_action(cx.listener(Self::go_back))
-            .on_action(cx.listener(Self::switch_mode_next))
-            .on_action(cx.listener(Self::switch_mode_prev))
-            .size_full()
+        // Build the launcher panel
+        let launcher_panel = div()
+            .id("launcher-panel")
+            .w(px(launcher_w))
+            .h(px(launcher_h))
             .flex()
-            .items_center()
-            .justify_center()
-            // Click on backdrop to close
-            .on_mouse_down(gpui::MouseButton::Left, move |_event, _window, _cx| {
-                on_hide();
+            .flex_col()
+            .bg(if config.enable_transparency {
+                theme.window_background
+            } else {
+                theme.window_background.alpha(1.0)
             })
-            // Inner launcher box - fixed width and height
+            .border_1()
+            .border_color(theme.window_border)
+            .rounded(theme.window_border_radius)
+            .overflow_hidden()
+            // Input section
             .child(
                 div()
-                    .id("launcher-panel")
-                    .w(px(config.window_width))
-                    .h(px(config.window_height))
-                    .flex()
-                    .flex_col()
-                    .bg(if config.enable_transparency {
-                        theme.window_background
-                    } else {
-                        theme.window_background.alpha(1.0)
-                    })
-                    .border_1()
-                    .border_color(theme.window_border)
-                    .rounded(theme.window_border_radius)
-                    .overflow_hidden()
-                    // Stop click propagation to backdrop
-                    .on_mouse_down(gpui::MouseButton::Left, |_event, _window, cx| {
-                        cx.stop_propagation();
-                    })
-                    // Input section
+                    .w_full()
+                    .px_2()
+                    .py_3()
+                    .border_b_1()
+                    .border_color(cx.theme().border)
                     .child(
-                        div()
-                            .w_full()
-                            .px_2()
-                            .py_3()
-                            .border_b_1()
-                            .border_color(cx.theme().border)
-                            .child(
-                                gpui_component::input::Input::new(&self.input_state)
-                                    .appearance(false)
-                                    .cleanable(true)
-                                    .prefix(input_prefix),
-                            ),
-                    )
-                    // List content
-                    .child(list_content),
+                        gpui_component::input::Input::new(&self.input_state)
+                            .appearance(false)
+                            .cleanable(true)
+                            .prefix(input_prefix),
+                    ),
             )
+            // List content
+            .child(list_content);
+
+        if config.enable_backdrop {
+            // With backdrop: fullscreen container with centered panel and click-outside-to-close
+            let on_hide = self.on_hide.clone();
+            div()
+                .track_focus(&self.focus_handle)
+                .key_context("LauncherView")
+                .on_action(cx.listener(Self::select_next))
+                .on_action(cx.listener(Self::select_prev))
+                .on_action(cx.listener(Self::select_tab))
+                .on_action(cx.listener(Self::select_tab_prev))
+                .on_action(cx.listener(Self::confirm))
+                .on_action(cx.listener(Self::cancel))
+                .on_action(cx.listener(Self::go_back))
+                .on_action(cx.listener(Self::switch_mode_next))
+                .on_action(cx.listener(Self::switch_mode_prev))
+                .size_full()
+                .flex()
+                .items_center()
+                .justify_center()
+                // Click on backdrop to close
+                .on_mouse_down(gpui::MouseButton::Left, move |_event, _window, _cx| {
+                    on_hide();
+                })
+                // Stop click propagation on the panel
+                .child(launcher_panel.on_mouse_down(
+                    gpui::MouseButton::Left,
+                    |_event, _window, cx| {
+                        cx.stop_propagation();
+                    },
+                ))
+                .into_any_element()
+        } else {
+            // No backdrop: just the launcher panel filling the window
+            launcher_panel
+                .track_focus(&self.focus_handle)
+                .key_context("LauncherView")
+                .on_action(cx.listener(Self::select_next))
+                .on_action(cx.listener(Self::select_prev))
+                .on_action(cx.listener(Self::select_tab))
+                .on_action(cx.listener(Self::select_tab_prev))
+                .on_action(cx.listener(Self::confirm))
+                .on_action(cx.listener(Self::cancel))
+                .on_action(cx.listener(Self::go_back))
+                .on_action(cx.listener(Self::switch_mode_next))
+                .on_action(cx.listener(Self::switch_mode_prev))
+                .into_any_element()
+        }
     }
 }
 

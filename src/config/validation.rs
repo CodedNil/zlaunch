@@ -18,45 +18,47 @@ pub struct ValidationWarning {
 /// Validate the entire config, returning warnings for non-fatal issues.
 ///
 /// This function checks for:
-/// - Window dimensions outside recommended ranges
+/// - Launcher dimensions outside recommended ranges
 /// - Search provider URLs missing the `{query}` placeholder
 /// - Invalid trigger formats for search providers
 pub fn validate_config(config: &AppConfig) -> Vec<ValidationWarning> {
     let mut warnings = vec![];
 
-    // Validate window dimensions
-    if config.window_width < 300.0 {
+    // Validate launcher_size dimensions if set
+    let (launcher_w, launcher_h) = config.get_launcher_size();
+
+    if launcher_w < 300.0 {
         warnings.push(ValidationWarning {
-            field: "window_width".to_string(),
+            field: "launcher_size".to_string(),
             message: format!(
                 "Width {} is below minimum (300). Consider increasing for usability.",
-                config.window_width
+                launcher_w
             ),
         });
-    } else if config.window_width > 2000.0 {
+    } else if launcher_w > 2000.0 {
         warnings.push(ValidationWarning {
-            field: "window_width".to_string(),
+            field: "launcher_size".to_string(),
             message: format!(
                 "Width {} exceeds maximum (2000). This may cause display issues.",
-                config.window_width
+                launcher_w
             ),
         });
     }
 
-    if config.window_height < 200.0 {
+    if launcher_h < 200.0 {
         warnings.push(ValidationWarning {
-            field: "window_height".to_string(),
+            field: "launcher_size".to_string(),
             message: format!(
                 "Height {} is below minimum (200). Consider increasing for usability.",
-                config.window_height
+                launcher_h
             ),
         });
-    } else if config.window_height > 1500.0 {
+    } else if launcher_h > 1500.0 {
         warnings.push(ValidationWarning {
-            field: "window_height".to_string(),
+            field: "launcher_size".to_string(),
             message: format!(
                 "Height {} exceeds maximum (1500). This may cause display issues.",
-                config.window_height
+                launcher_h
             ),
         });
     }
@@ -78,6 +80,30 @@ pub fn validate_config(config: &AppConfig) -> Vec<ValidationWarning> {
                 config.theme
             ),
         });
+    }
+
+    // Validate window_size if set (only relevant when enable_backdrop is true)
+    if config.enable_backdrop {
+        if let Some((w, h)) = config.window_size {
+            if w < launcher_w {
+                warnings.push(ValidationWarning {
+                    field: "window_size".to_string(),
+                    message: format!(
+                        "window_size width ({}) is smaller than launcher_size width ({}). Will use {}.",
+                        w, launcher_w, launcher_w
+                    ),
+                });
+            }
+            if h < launcher_h {
+                warnings.push(ValidationWarning {
+                    field: "window_size".to_string(),
+                    message: format!(
+                        "window_size height ({}) is smaller than launcher_size height ({}). Will use {}.",
+                        h, launcher_h, launcher_h
+                    ),
+                });
+            }
+        }
     }
 
     warnings
@@ -155,33 +181,45 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_window_width_too_small() {
+    fn test_validate_launcher_size_width_too_small() {
         let config = AppConfig {
-            window_width: 100.0,
+            launcher_size: Some((100.0, 400.0)),
             ..AppConfig::default()
         };
         let warnings = validate_config(&config);
-        assert!(warnings.iter().any(|w| w.field == "window_width"));
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.field == "launcher_size" && w.message.contains("Width"))
+        );
     }
 
     #[test]
-    fn test_validate_window_width_too_large() {
+    fn test_validate_launcher_size_width_too_large() {
         let config = AppConfig {
-            window_width: 3000.0,
+            launcher_size: Some((3000.0, 400.0)),
             ..AppConfig::default()
         };
         let warnings = validate_config(&config);
-        assert!(warnings.iter().any(|w| w.field == "window_width"));
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.field == "launcher_size" && w.message.contains("Width"))
+        );
     }
 
     #[test]
-    fn test_validate_window_height_too_small() {
+    fn test_validate_launcher_size_height_too_small() {
         let config = AppConfig {
-            window_height: 50.0,
+            launcher_size: Some((600.0, 50.0)),
             ..AppConfig::default()
         };
         let warnings = validate_config(&config);
-        assert!(warnings.iter().any(|w| w.field == "window_height"));
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.field == "launcher_size" && w.message.contains("Height"))
+        );
     }
 
     #[test]
@@ -259,5 +297,90 @@ mod tests {
         };
         let warnings = validate_config(&config);
         assert!(!warnings.iter().any(|w| w.field == "theme"));
+    }
+
+    #[test]
+    fn test_validate_window_size_none() {
+        let config = AppConfig {
+            window_size: None,
+            ..AppConfig::default()
+        };
+        let warnings = validate_config(&config);
+        assert!(!warnings.iter().any(|w| w.field == "window_size"));
+    }
+
+    #[test]
+    fn test_validate_window_size_larger_than_launcher() {
+        let config = AppConfig {
+            launcher_size: Some((600.0, 400.0)),
+            window_size: Some((1920.0, 1080.0)),
+            enable_backdrop: true,
+            ..AppConfig::default()
+        };
+        let warnings = validate_config(&config);
+        assert!(!warnings.iter().any(|w| w.field == "window_size"));
+    }
+
+    #[test]
+    fn test_validate_window_size_width_too_small() {
+        let config = AppConfig {
+            launcher_size: Some((600.0, 400.0)),
+            window_size: Some((400.0, 1080.0)),
+            enable_backdrop: true,
+            ..AppConfig::default()
+        };
+        let warnings = validate_config(&config);
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.field == "window_size" && w.message.contains("width"))
+        );
+    }
+
+    #[test]
+    fn test_validate_window_size_height_too_small() {
+        let config = AppConfig {
+            launcher_size: Some((600.0, 400.0)),
+            window_size: Some((1920.0, 300.0)),
+            enable_backdrop: true,
+            ..AppConfig::default()
+        };
+        let warnings = validate_config(&config);
+        assert!(
+            warnings
+                .iter()
+                .any(|w| w.field == "window_size" && w.message.contains("height"))
+        );
+    }
+
+    #[test]
+    fn test_validate_window_size_both_too_small() {
+        let config = AppConfig {
+            launcher_size: Some((600.0, 400.0)),
+            window_size: Some((400.0, 300.0)),
+            enable_backdrop: true,
+            ..AppConfig::default()
+        };
+        let warnings = validate_config(&config);
+        // Should have two warnings: one for width, one for height
+        let window_size_warnings: Vec<_> = warnings
+            .iter()
+            .filter(|w| w.field == "window_size")
+            .collect();
+        assert_eq!(window_size_warnings.len(), 2);
+    }
+
+    #[test]
+    fn test_validate_window_size_ignored_when_backdrop_disabled() {
+        // When enable_backdrop is false, window_size should not be validated
+        let config = AppConfig {
+            launcher_size: Some((600.0, 400.0)),
+            window_size: Some((100.0, 100.0)), // Much smaller than launcher
+            enable_backdrop: false,
+            ..AppConfig::default()
+        };
+        let warnings = validate_config(&config);
+        // Should have no window_size warnings since backdrop is disabled
+        assert!(!warnings.iter().any(|w| w.field == "window_size"));
     }
 }

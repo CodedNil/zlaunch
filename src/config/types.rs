@@ -9,10 +9,18 @@ use std::collections::HashSet;
 pub struct AppConfig {
     /// Name of the theme to use.
     pub theme: String,
-    /// Window width in pixels.
-    pub window_width: f32,
-    /// Window height in pixels.
-    pub window_height: f32,
+    /// Size of the launcher panel (width, height) in pixels.
+    /// Default: (600.0, 400.0)
+    pub launcher_size: Option<(f32, f32)>,
+    /// Optional explicit window buffer size (width, height).
+    /// Overrides compositor-specific defaults to reduce VRAM usage.
+    /// Only used when enable_backdrop is true.
+    /// Must be >= launcher_size.
+    pub window_size: Option<(f32, f32)>,
+    /// Enable the transparent backdrop overlay.
+    /// When false, the window is just the launcher panel with no click-outside behavior.
+    /// Default: true
+    pub enable_backdrop: bool,
     /// Automatically apply blur layer rules on Hyprland.
     pub hyprland_auto_blur: bool,
     /// Modules that are disabled (DEPRECATED: use combined_modules instead).
@@ -32,8 +40,9 @@ impl AppConfig {
     pub const fn default_const() -> Self {
         Self {
             theme: String::new(),
-            window_width: 600.0,
-            window_height: 400.0,
+            launcher_size: None,
+            window_size: None,
+            enable_backdrop: true,
             hyprland_auto_blur: true,
             disabled_modules: None,
             enable_transparency: true,
@@ -42,14 +51,20 @@ impl AppConfig {
             combined_modules: None,
         }
     }
+
+    /// Get the launcher panel size, using default if not configured.
+    pub fn get_launcher_size(&self) -> (f32, f32) {
+        self.launcher_size.unwrap_or((600.0, 400.0))
+    }
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
             theme: "default".to_string(),
-            window_width: 600.0,
-            window_height: 400.0,
+            launcher_size: None,
+            window_size: None,
+            enable_backdrop: true,
             hyprland_auto_blur: true,
             disabled_modules: None,
             enable_transparency: true,
@@ -320,8 +335,9 @@ mod tests {
     fn test_app_config_default() {
         let config = AppConfig::default();
         assert_eq!(config.theme, "default");
-        assert_eq!(config.window_width, 600.0);
-        assert_eq!(config.window_height, 400.0);
+        assert!(config.launcher_size.is_none());
+        assert_eq!(config.get_launcher_size(), (600.0, 400.0));
+        assert!(config.enable_backdrop);
         assert!(config.hyprland_auto_blur);
         assert!(config.enable_transparency);
         assert!(config.search_providers.is_some());
@@ -332,35 +348,34 @@ mod tests {
         let config = AppConfig::default_const();
         // Const default has empty theme (can't create String in const context)
         assert!(config.theme.is_empty());
-        assert_eq!(config.window_width, 600.0);
+        assert!(config.launcher_size.is_none());
+        assert!(config.enable_backdrop);
     }
 
     #[test]
     fn test_config_serialization() {
         let config = AppConfig {
             theme: "dark".to_string(),
-            window_width: 800.0,
-            window_height: 600.0,
+            launcher_size: Some((800.0, 600.0)),
             ..AppConfig::default()
         };
 
         let toml_str = toml::to_string(&config).expect("Failed to serialize");
         assert!(toml_str.contains("theme = \"dark\""));
-        assert!(toml_str.contains("window_width = 800.0"));
+        assert!(toml_str.contains("launcher_size = [800.0, 600.0]"));
     }
 
     #[test]
     fn test_config_deserialization() {
         let toml_str = r#"
             theme = "catppuccin"
-            window_width = 700.0
-            window_height = 500.0
+            launcher_size = [700.0, 500.0]
         "#;
 
         let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
         assert_eq!(config.theme, "catppuccin");
-        assert_eq!(config.window_width, 700.0);
-        assert_eq!(config.window_height, 500.0);
+        assert_eq!(config.launcher_size, Some((700.0, 500.0)));
+        assert_eq!(config.get_launcher_size(), (700.0, 500.0));
     }
 
     #[test]
@@ -379,5 +394,87 @@ mod tests {
         assert_eq!(config.combined_modules[0], ConfigModule::Applications);
         assert_eq!(config.combined_modules[1], ConfigModule::Calculator);
         assert_eq!(config.combined_modules[2], ConfigModule::Ai);
+    }
+
+    #[test]
+    fn test_window_size_default_none() {
+        let config = AppConfig::default();
+        assert!(config.window_size.is_none());
+    }
+
+    #[test]
+    fn test_window_size_deserialization() {
+        let toml_str = r#"
+            window_size = [1920.0, 1080.0]
+        "#;
+
+        let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
+        assert_eq!(config.window_size, Some((1920.0, 1080.0)));
+    }
+
+    #[test]
+    fn test_window_size_serialization() {
+        let config = AppConfig {
+            window_size: Some((1920.0, 1080.0)),
+            ..AppConfig::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize");
+        assert!(toml_str.contains("window_size = [1920.0, 1080.0]"));
+    }
+
+    #[test]
+    fn test_window_size_missing_uses_none() {
+        let toml_str = r#"
+            theme = "default"
+        "#;
+
+        let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
+        assert!(config.window_size.is_none());
+    }
+
+    #[test]
+    fn test_launcher_size_default() {
+        let config = AppConfig::default();
+        assert!(config.launcher_size.is_none());
+        assert_eq!(config.get_launcher_size(), (600.0, 400.0));
+    }
+
+    #[test]
+    fn test_launcher_size_deserialization() {
+        let toml_str = r#"
+            launcher_size = [800.0, 500.0]
+        "#;
+
+        let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
+        assert_eq!(config.launcher_size, Some((800.0, 500.0)));
+        assert_eq!(config.get_launcher_size(), (800.0, 500.0));
+    }
+
+    #[test]
+    fn test_enable_backdrop_default_true() {
+        let config = AppConfig::default();
+        assert!(config.enable_backdrop);
+    }
+
+    #[test]
+    fn test_enable_backdrop_deserialization() {
+        let toml_str = r#"
+            enable_backdrop = false
+        "#;
+
+        let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
+        assert!(!config.enable_backdrop);
+    }
+
+    #[test]
+    fn test_enable_backdrop_serialization() {
+        let config = AppConfig {
+            enable_backdrop: false,
+            ..AppConfig::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize");
+        assert!(toml_str.contains("enable_backdrop = false"));
     }
 }

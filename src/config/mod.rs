@@ -22,8 +22,7 @@ pub use types::{AppConfig, ConfigModule, ConfigSearchProvider, LauncherMode};
 // Re-export service functions
 pub use service::{
     ConfigProvider, ConfigService, config, config_file_exists, get_combined_modules,
-    get_default_modes, init_config, load_configured_theme, update_config, window_height,
-    window_width,
+    get_default_modes, init_config, launcher_size, load_configured_theme, update_config,
 };
 
 // Re-export theme functions

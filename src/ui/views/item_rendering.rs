@@ -184,7 +184,7 @@ fn render_calculator_content(calc: &crate::items::CalculatorItem, selected: bool
         theme.item_title_color
     };
 
-    let max_width = theme.max_text_width(px(crate::config::window_width()), selected);
+    let max_width = theme.max_text_width(px(crate::config::launcher_size().0), selected);
 
     div()
         .h(theme.item_content_height)
@@ -337,7 +337,7 @@ pub fn render_text_content(name: &str, description: Option<&str>, selected: bool
         .text_ellipsis()
         .child(SharedString::from(name.to_string()));
 
-    let max_width = theme.max_text_width(px(crate::config::window_width()), selected);
+    let max_width = theme.max_text_width(px(crate::config::launcher_size().0), selected);
 
     let mut content = div()
         .h(theme.item_content_height)

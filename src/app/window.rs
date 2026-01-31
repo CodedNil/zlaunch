@@ -50,8 +50,26 @@ fn create_and_show_window_impl(
     let mut items: Vec<ListItem> = Vec::with_capacity(windows.len() + applications.len());
     items.extend(windows.into_iter().map(ListItem::Window));
     items.extend(applications.into_iter().map(ListItem::Application));
-    // Get display size based on compositor
-    let display_size = if compositor.name() == "KWin" {
+
+    // Get display size based on config
+    let config = crate::config::config();
+    let (launcher_w, launcher_h) = config.get_launcher_size();
+
+    let display_size = if !config.enable_backdrop {
+        // No backdrop - window is exactly the launcher panel size
+        size(px(launcher_w), px(launcher_h))
+    } else if let Some((w, h)) = config.window_size {
+        // User-configured window size with backdrop - ensure it's at least as large as launcher panel
+        let final_w = w.max(launcher_w);
+        let final_h = h.max(launcher_h);
+        if final_w != w || final_h != h {
+            warn!(
+                "Configured window_size ({}, {}) is smaller than launcher_size ({}, {}). Using ({}, {}).",
+                w, h, launcher_w, launcher_h, final_w, final_h
+            );
+        }
+        size(px(final_w), px(final_h))
+    } else if compositor.name() == "KWin" {
         // For KDE/KWin, use fixed 1920x1080
         size(px(1920.0), px(1080.0))
     } else {
