@@ -3,6 +3,59 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+/// Configuration for fuzzy matching algorithm.
+///
+/// These settings control how items are scored during search,
+/// allowing fine-tuning of match quality and ranking behavior.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FuzzyMatchConfig {
+    /// Bonus score for exact name match (case-insensitive).
+    /// Default: 100000
+    pub exact_match_bonus: i64,
+    /// Bonus score when name starts with query.
+    /// Default: 50000
+    pub prefix_match_bonus: i64,
+    /// Bonus score when query matches start of any word in name.
+    /// Default: 25000
+    pub word_prefix_bonus: i64,
+    /// Maximum bonus for contiguous character matches.
+    /// Default: 10000
+    pub contiguity_bonus: i64,
+    /// Multiplier for description-only matches (0.0-1.0).
+    /// Lower values make description matches rank lower than name matches.
+    /// Default: 0.3
+    pub description_penalty: f64,
+    /// Score multiplier for action items in combined mode.
+    /// Lower values demote system actions like Shutdown, Logout.
+    /// Default: 0.8
+    pub action_score_multiplier: f64,
+    /// Score multiplier for submenu items in combined mode.
+    /// Default: 0.9
+    pub submenu_score_multiplier: f64,
+}
+
+impl FuzzyMatchConfig {
+    /// Const default for static initialization.
+    pub const fn default_const() -> Self {
+        Self {
+            exact_match_bonus: 100_000,
+            prefix_match_bonus: 50_000,
+            word_prefix_bonus: 25_000,
+            contiguity_bonus: 10_000,
+            description_penalty: 0.3,
+            action_score_multiplier: 0.8,
+            submenu_score_multiplier: 0.9,
+        }
+    }
+}
+
+impl Default for FuzzyMatchConfig {
+    fn default() -> Self {
+        Self::default_const()
+    }
+}
+
 /// Application configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -33,6 +86,8 @@ pub struct AppConfig {
     pub default_modes: Option<Vec<String>>,
     /// Modules to include in combined view (ordered).
     pub combined_modules: Option<Vec<ConfigModule>>,
+    /// Fuzzy matching configuration for search scoring.
+    pub fuzzy_match: FuzzyMatchConfig,
 }
 
 impl AppConfig {
@@ -49,6 +104,7 @@ impl AppConfig {
             search_providers: None,
             default_modes: None,
             combined_modules: None,
+            fuzzy_match: FuzzyMatchConfig::default_const(),
         }
     }
 
@@ -96,6 +152,7 @@ impl Default for AppConfig {
             ]),
             default_modes: None,
             combined_modules: None,
+            fuzzy_match: FuzzyMatchConfig::default(),
         }
     }
 }
@@ -476,5 +533,63 @@ mod tests {
 
         let toml_str = toml::to_string(&config).expect("Failed to serialize");
         assert!(toml_str.contains("enable_backdrop = false"));
+    }
+
+    #[test]
+    fn test_fuzzy_match_config_default() {
+        let config = FuzzyMatchConfig::default();
+        assert_eq!(config.exact_match_bonus, 100_000);
+        assert_eq!(config.prefix_match_bonus, 50_000);
+        assert_eq!(config.word_prefix_bonus, 25_000);
+        assert_eq!(config.contiguity_bonus, 10_000);
+        assert!((config.description_penalty - 0.3).abs() < f64::EPSILON);
+        assert!((config.action_score_multiplier - 0.8).abs() < f64::EPSILON);
+        assert!((config.submenu_score_multiplier - 0.9).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_fuzzy_match_config_deserialization() {
+        let toml_str = r#"
+            [fuzzy_match]
+            exact_match_bonus = 200000
+            prefix_match_bonus = 100000
+            description_penalty = 0.5
+        "#;
+
+        let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
+        assert_eq!(config.fuzzy_match.exact_match_bonus, 200_000);
+        assert_eq!(config.fuzzy_match.prefix_match_bonus, 100_000);
+        assert!((config.fuzzy_match.description_penalty - 0.5).abs() < f64::EPSILON);
+        // Defaults should be used for unspecified fields
+        assert_eq!(config.fuzzy_match.word_prefix_bonus, 25_000);
+        assert_eq!(config.fuzzy_match.contiguity_bonus, 10_000);
+    }
+
+    #[test]
+    fn test_fuzzy_match_config_serialization() {
+        let config = AppConfig {
+            fuzzy_match: FuzzyMatchConfig {
+                exact_match_bonus: 50_000,
+                description_penalty: 0.1,
+                ..Default::default()
+            },
+            ..AppConfig::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize");
+        assert!(toml_str.contains("exact_match_bonus = 50000"));
+        assert!(toml_str.contains("description_penalty = 0.1"));
+    }
+
+    #[test]
+    fn test_fuzzy_match_config_missing_uses_defaults() {
+        let toml_str = r#"
+            theme = "default"
+        "#;
+
+        let config: AppConfig = toml::from_str(toml_str).expect("Failed to deserialize");
+        // Should use all defaults when fuzzy_match section is missing
+        assert_eq!(config.fuzzy_match.exact_match_bonus, 100_000);
+        assert_eq!(config.fuzzy_match.prefix_match_bonus, 50_000);
     }
 }

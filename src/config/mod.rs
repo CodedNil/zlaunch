@@ -17,7 +17,7 @@ mod types;
 pub mod validation;
 
 // Re-export types
-pub use types::{AppConfig, ConfigModule, ConfigSearchProvider, LauncherMode};
+pub use types::{AppConfig, ConfigModule, ConfigSearchProvider, FuzzyMatchConfig, LauncherMode};
 
 // Re-export service functions
 pub use service::{

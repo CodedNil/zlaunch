@@ -4,7 +4,7 @@
 //! and section management.
 
 use crate::ai::LLMClient;
-use crate::config::ConfigModule;
+use crate::config::{ConfigModule, config};
 use crate::items::{ActionItem, ListItem, SubmenuItem};
 use crate::ui::delegates::BaseDelegate;
 use crate::ui::theme::theme;
@@ -112,9 +112,12 @@ impl ItemListDelegate {
         let filtered_indices: Vec<usize> = (0..items.len()).collect();
         sections.update(&items, &filtered_indices, false, false, 0);
 
+        // Get fuzzy match config from application config
+        let fuzzy_config = config().fuzzy_match.clone();
+
         Self {
             base: BaseDelegate::new(items),
-            filter: ItemFilter::new(),
+            filter: ItemFilter::new(fuzzy_config),
             dynamic: DynamicItems::new(),
             sections,
             on_confirm: None,
